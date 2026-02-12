@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Zap, CheckCircle2, ChevronUp, ChevronDown, Lightbulb, History, FileText, Target, Brain, Crown, X, Sparkles, MessageSquare, Send, Activity, ShieldAlert, Crosshair, Anchor } from 'lucide-react';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // --- CONFIGURACIÓN GEMINI API ---
+// NOTA: Para producción, idealmente usa variables de entorno (import.meta.env.VITE_API_KEY)
 const apiKey = ""; 
-const genAI = new GoogleGenerativeAI(apiKey);
 
 // --- LOGO BADGE "GOAT LUXURY" (Vectorial) ---
 const GoatBadgeLogo = ({ className }) => (
@@ -341,13 +340,31 @@ const Roadtosuccess = () => {
     setShowMonthReportModal(true);
   };
 
-  // --- LÓGICA DE IA (GEMINI) ---
+  // --- LÓGICA DE IA (SIN DEPENDENCIAS) ---
   const callGemini = async (prompt) => {
+    if (!apiKey) {
+        return "Clave API no configurada. Añade tu API Key en el código.";
+    }
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-09-2025" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      // Uso directo de fetch para evitar error de importación
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }]
+          })
+        }
+      );
+      
+      const data = await response.json();
+      if (data.error) {
+          throw new Error(data.error.message || "Error en la API");
+      }
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || "Sin respuesta";
     } catch (error) {
       console.error("Error AI:", error);
       return "El sistema está sobrecargado. Tu disciplina es la única respuesta ahora.";
@@ -379,7 +396,6 @@ const Roadtosuccess = () => {
   };
 
   // --- PATRÓN DE FONDO "ALL-SEEING EYE" (SVG ENCODED) ---
-  // Un patrón geométrico sutil en dorado muy transparente
   const eyePattern = `data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23EAB308' fill-opacity='0.05'%3E%3Cpath d='M30 10c11 0 20 9 20 20s-9 20-20 20S10 41 10 30s9-20 20-20zm0 10a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E`;
 
   return (
